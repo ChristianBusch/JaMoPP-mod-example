@@ -5,11 +5,9 @@ import java.math.BigInteger;
 import java.util.List;
 
 import org.eclipse.emf.common.util.URI;
-import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
-import org.emftext.language.java.commons.Commentable;
 import org.emftext.language.java.containers.CompilationUnit;
 import org.emftext.language.java.expressions.ExpressionsFactory;
 import org.emftext.language.java.expressions.UnaryExpression;
@@ -38,7 +36,7 @@ import org.emftext.language.java.variables.impl.VariablesFactoryImpl;
  * org.emftext.language.java.resource
  * org.emftext.language.java.resource
  * 
- * as JaMoPP maven repo seems broken right now.
+ * Reason: JaMoPP maven repo seems broken right now.
  * 
  * TODO: use maven dependency instead as soon as possible
  */
@@ -50,60 +48,97 @@ import org.emftext.language.java.variables.impl.VariablesFactoryImpl;
  */
 public class Refactoring {
 
-	public static void main(String[] args) {
+    private static final String location = "src/test/java/input/CalculatorPow.java";
 
-		JaMoPPUtil.initialize(); // initialize everything (has to be done once.)
 
-		// load file and get first method
-		ResourceSet resSet = new ResourceSetImpl();
-		Resource resource = resSet.getResource(
-				URI.createURI("src/test/java/input/CalculatorPow.java"), true);
-		CompilationUnit cu = (CompilationUnit) resource.getContents().get(0);
-		List<Method> methods = cu.getContainedClass().getMethods();
-		EObject content = methods.get(0).getFirstChildByType(
-				LocalVariableStatement.class);
+    public static void main(String[] args) {
 
-		StatementsFactory statFac = new StatementsFactoryImpl();
-		ExpressionsFactory expFac = new ExpressionsFactoryImpl();
-		LiteralsFactory litFac = new LiteralsFactoryImpl();
-		VariablesFactory varFac = new VariablesFactoryImpl();
-		TypesFactory typeFac = new TypesFactoryImpl();
+	JaMoPPUtil.initialize(); // initialize everything (has to be done once.)
 
-		Condition condition = statFac.createCondition(); // get an "if"
+	Resource resource = readJavaFile(location);
+	LocalVariableStatement content = getFirstVariableStatementOfFirstMethod(resource);
+	modifyCode(content);
+	saveModifications(resource);
+    }
 
-		// build a "false"
-		UnaryExpression exp = expFac.createUnaryExpression();
-		BooleanLiteral boo = litFac.createBooleanLiteral();
-		boo.setValue(false);
-		exp.setChild(boo);
 
-		condition.setCondition(exp); // assemble to "if( false )"
+    private static Resource readJavaFile(String fileLocation) {
 
-		// create a code block
-		Block ifBlock = statFac.createBlock();
-		Block elseBlock = statFac.createBlock();
+	ResourceSet resSet = new ResourceSetImpl();
+	Resource resource = resSet.getResource(URI.createURI(fileLocation), true);
+	return resource;
+    }
 
-		condition.setStatement(ifBlock);
-		condition.setElseStatement(elseBlock);
-		LocalVariableStatement locVarStat = statFac
-				.createLocalVariableStatement();
-		LocalVariable locVar = varFac.createLocalVariable();
-		PrimitiveType intType = typeFac.createInt();
-		locVar.setTypeReference(intType);
-		locVar.setName("answer");
-		DecimalIntegerLiteral intLit = litFac.createDecimalIntegerLiteral();
-		intLit.setDecimalValue(new BigInteger("23"));
-		locVar.setInitialValue(intLit);
 
-		locVarStat.setVariable(locVar);
-		ifBlock.getStatements().add(locVarStat);
-		((Commentable) content).addBeforeContainingStatement(condition);
-		try {
-			resource.save(null);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+    private static LocalVariableStatement getFirstVariableStatementOfFirstMethod(Resource resource) {
+
+	CompilationUnit cu = (CompilationUnit) resource.getContents().get(0);
+	List<Method> methods = cu.getContainedClass().getMethods();
+	LocalVariableStatement content = methods.get(0).getFirstChildByType(LocalVariableStatement.class);
+	return content;
+    }
+
+
+    private static void modifyCode(LocalVariableStatement content) {
+
+	StatementsFactory statFac = new StatementsFactoryImpl();
+	ExpressionsFactory expFac = new ExpressionsFactoryImpl();
+	LiteralsFactory litFac = new LiteralsFactoryImpl();
+	VariablesFactory varFac = new VariablesFactoryImpl();
+	TypesFactory typeFac = new TypesFactoryImpl();
+
+	Block ifBlock = statFac.createBlock();
+	Block elseBlock = statFac.createBlock();
+
+	LocalVariableStatement initializedVariable = createLocalVariableStatement(statFac, litFac, varFac,
+		typeFac);
+	ifBlock.getStatements().add(initializedVariable);
+
+	Condition ifElseBlock = statFac.createCondition();
+	UnaryExpression falseBool = buildFalseBoolean(expFac, litFac);
+	ifElseBlock.setCondition(falseBool);
+	ifElseBlock.setStatement(ifBlock);
+	ifElseBlock.setElseStatement(elseBlock);
+
+	content.addBeforeContainingStatement(ifElseBlock);
+    }
+
+
+    private static UnaryExpression buildFalseBoolean(ExpressionsFactory expFac, LiteralsFactory litFac) {
+
+	UnaryExpression exp = expFac.createUnaryExpression();
+	BooleanLiteral boo = litFac.createBooleanLiteral();
+	boo.setValue(false);
+	exp.setChild(boo);
+	return exp;
+    }
+
+
+    private static LocalVariableStatement createLocalVariableStatement(StatementsFactory statFac,
+	    LiteralsFactory litFac, VariablesFactory varFac, TypesFactory typeFac) {
+
+	LocalVariable answerVariable = varFac.createLocalVariable();
+	PrimitiveType intType = typeFac.createInt();
+	answerVariable.setTypeReference(intType);
+	answerVariable.setName("answer");
+	DecimalIntegerLiteral intLit = litFac.createDecimalIntegerLiteral();
+	intLit.setDecimalValue(new BigInteger("23"));
+	answerVariable.setInitialValue(intLit);
+
+	LocalVariableStatement locVarStat = statFac.createLocalVariableStatement();
+	locVarStat.setVariable(answerVariable);
+	return locVarStat;
+    }
+
+
+    private static void saveModifications(Resource resource) {
+
+	try {
+	    resource.save(null);
+	} catch (IOException e) {
+	    System.out.println("ERROR when saving modifications!");
+	    e.printStackTrace();
 	}
+    }
 
 }
