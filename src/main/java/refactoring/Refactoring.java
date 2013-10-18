@@ -23,22 +23,30 @@ import org.emftext.language.java.statements.LocalVariableStatement;
 import org.emftext.language.java.statements.StatementsFactory;
 import org.emftext.language.java.statements.impl.StatementsFactoryImpl;
 
+/* 
+ * projects needed in the build path:
+ * 
+ * org.emftext.language.java.resource
+ * org.emftext.language.java.resource
+ * 
+ * as JaMoPP maven repo seems broken right now.
+ * 
+ * TODO: use maven dependency instead as soon as possible
+ */
+
+/**
+ * A simple demonstration of using JaMoPP to modify existing .java files.
+ * 
+ * @author Christian Busch
+ */
 public class Refactoring {
 
 	public static void main(String[] args) {
 
-		// project org.emftext.language.java.resource has to be in workplace and
-		// buildpath
-		// as JaMoPP maven repo seems broken right now.
-		// TODO: use maven dependency instead as soon as possible
 		JaMoPPUtil.initialize(); // initialize everything (has to be done once.)
 		ResourceSet resSet = new ResourceSetImpl();
 		Resource resource = resSet.getResource(
-				URI.createURI("src/test/java/input/CalculatorPow.java"), true); // load
-																				// the
-																				// file
-																				// as
-																				// resource
+				URI.createURI("src/test/java/input/CalculatorPow.java"), true);
 		CompilationUnit cu = (CompilationUnit) resource.getContents().get(0);
 		List<Method> methods = cu.getContainedClass().getMethods();
 		EObject content = methods.get(0).getFirstChildByType(
