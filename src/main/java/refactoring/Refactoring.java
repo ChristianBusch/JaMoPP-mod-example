@@ -1,6 +1,7 @@
 package refactoring;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.List;
 
 import org.eclipse.emf.common.util.URI;
@@ -14,14 +15,22 @@ import org.emftext.language.java.expressions.ExpressionsFactory;
 import org.emftext.language.java.expressions.UnaryExpression;
 import org.emftext.language.java.expressions.impl.ExpressionsFactoryImpl;
 import org.emftext.language.java.literals.BooleanLiteral;
+import org.emftext.language.java.literals.DecimalIntegerLiteral;
 import org.emftext.language.java.literals.LiteralsFactory;
 import org.emftext.language.java.literals.impl.LiteralsFactoryImpl;
 import org.emftext.language.java.members.Method;
 import org.emftext.language.java.resource.JaMoPPUtil;
-import org.emftext.language.java.statements.Assert;
+import org.emftext.language.java.statements.Block;
+import org.emftext.language.java.statements.Condition;
 import org.emftext.language.java.statements.LocalVariableStatement;
 import org.emftext.language.java.statements.StatementsFactory;
 import org.emftext.language.java.statements.impl.StatementsFactoryImpl;
+import org.emftext.language.java.types.PrimitiveType;
+import org.emftext.language.java.types.TypesFactory;
+import org.emftext.language.java.types.impl.TypesFactoryImpl;
+import org.emftext.language.java.variables.LocalVariable;
+import org.emftext.language.java.variables.VariablesFactory;
+import org.emftext.language.java.variables.impl.VariablesFactoryImpl;
 
 /* 
  * projects needed in the build path:
@@ -44,6 +53,8 @@ public class Refactoring {
 	public static void main(String[] args) {
 
 		JaMoPPUtil.initialize(); // initialize everything (has to be done once.)
+
+		// load file and get first method
 		ResourceSet resSet = new ResourceSetImpl();
 		Resource resource = resSet.getResource(
 				URI.createURI("src/test/java/input/CalculatorPow.java"), true);
@@ -55,15 +66,38 @@ public class Refactoring {
 		StatementsFactory statFac = new StatementsFactoryImpl();
 		ExpressionsFactory expFac = new ExpressionsFactoryImpl();
 		LiteralsFactory litFac = new LiteralsFactoryImpl();
+		VariablesFactory varFac = new VariablesFactoryImpl();
+		TypesFactory typeFac = new TypesFactoryImpl();
 
-		Assert newAss = statFac.createAssert();
+		Condition condition = statFac.createCondition(); // get an "if"
+
+		// build a "false"
 		UnaryExpression exp = expFac.createUnaryExpression();
 		BooleanLiteral boo = litFac.createBooleanLiteral();
 		boo.setValue(false);
 		exp.setChild(boo);
 
-		newAss.setCondition(exp);
-		((Commentable) content).addBeforeContainingStatement(newAss);
+		condition.setCondition(exp); // assemble to "if( false )"
+
+		// create a code block
+		Block ifBlock = statFac.createBlock();
+		Block elseBlock = statFac.createBlock();
+
+		condition.setStatement(ifBlock);
+		condition.setElseStatement(elseBlock);
+		LocalVariableStatement locVarStat = statFac
+				.createLocalVariableStatement();
+		LocalVariable locVar = varFac.createLocalVariable();
+		PrimitiveType intType = typeFac.createInt();
+		locVar.setTypeReference(intType);
+		locVar.setName("answer");
+		DecimalIntegerLiteral intLit = litFac.createDecimalIntegerLiteral();
+		intLit.setDecimalValue(new BigInteger("23"));
+		locVar.setInitialValue(intLit);
+
+		locVarStat.setVariable(locVar);
+		ifBlock.getStatements().add(locVarStat);
+		((Commentable) content).addBeforeContainingStatement(condition);
 		try {
 			resource.save(null);
 		} catch (IOException e) {
