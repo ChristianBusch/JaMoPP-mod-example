@@ -44,6 +44,13 @@ import org.emftext.language.java.variables.impl.VariablesFactoryImpl;
 /**
  * A simple demonstration of using JaMoPP to modify existing .java files.
  * 
+ * This Class will read a file and insert following code directly under the first method header:
+ * 
+ * <pre>if (true) {
+ *   int answer = 23;
+ *} else {
+ *}</pre>
+ * 
  * @author Christian Busch
  */
 public class Refactoring {
