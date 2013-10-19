@@ -14,7 +14,7 @@ if( false ) {
 
 So out of this:
 
-```jave
+```java
 package input;
 
 public class CalculatorPow {
@@ -29,7 +29,7 @@ public class CalculatorPow {
 
 ...becomes this:
 
-```jave
+```java
 package input;
 
 public class CalculatorPow {
