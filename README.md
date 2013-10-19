@@ -11,6 +11,41 @@ if( false ) {
 } else {
 }
 ```
+
+So out of this:
+
+```jave
+package input;
+
+public class CalculatorPow {
+
+	public double compute(double i) {
+		double result = Math.pow(i,2);
+		return result;
+	}
+}
+
+```
+
+...becomes this:
+
+```jave
+package input;
+
+public class CalculatorPow {
+
+	public double compute(double i) {
+		if (false) {
+			int answer = 23;
+		}else {
+		}
+		double result = Math.pow(i,2);
+		return result;
+	}
+}
+
+```
+
 \* actually the first LocalVariableStatement
 
 ### Note:
