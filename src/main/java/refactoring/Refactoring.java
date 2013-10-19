@@ -129,7 +129,7 @@ public class Refactoring {
 	answerVariable.setTypeReference(intType);
 	answerVariable.setName("answer");
 	DecimalIntegerLiteral intLit = litFac.createDecimalIntegerLiteral();
-	intLit.setDecimalValue(new BigInteger("23"));
+	intLit.setDecimalValue(new BigInteger("42"));
 	answerVariable.setInitialValue(intLit);
 
 	LocalVariableStatement locVarStat = statFac.createLocalVariableStatement();

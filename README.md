@@ -7,7 +7,7 @@ Running the code will modify the CalculatorPow.java file by inserting this code 
 
 ```java
 if( false ) {
-   int answer = 23;
+   int answer = 42;
 } else {
 }
 ```
@@ -36,7 +36,7 @@ public class CalculatorPow {
 
 	public double compute(double i) {
 		if (false) {
-			int answer = 23;
+			int answer = 42;
 		}else {
 		}
 		double result = Math.pow(i,2);
