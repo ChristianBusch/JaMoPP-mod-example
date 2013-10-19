@@ -33,7 +33,7 @@ import org.emftext.language.java.variables.impl.VariablesFactoryImpl;
 /* 
  * projects needed in the build path:
  * 
- * org.emftext.language.java.resource
+ * org.emftext.language.java
  * org.emftext.language.java.resource
  * 
  * Reason: JaMoPP maven repo seems broken right now.
