@@ -57,7 +57,7 @@ public class Refactoring {
 
 	Resource resource = readJavaFile(location);
 	LocalVariableStatement content = getFirstVariableStatementOfFirstMethod(resource);
-	modifyCode(content);
+	modifyCodeBefore(content);
 	saveModifications(resource);
     }
 
@@ -79,7 +79,7 @@ public class Refactoring {
     }
 
 
-    private static void modifyCode(LocalVariableStatement content) {
+    private static void modifyCodeBefore(LocalVariableStatement content) {
 
 	StatementsFactory statFac = new StatementsFactoryImpl();
 	ExpressionsFactory expFac = new ExpressionsFactoryImpl();
