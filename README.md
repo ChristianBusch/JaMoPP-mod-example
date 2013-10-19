@@ -3,7 +3,7 @@ JaMoPP-mod-example
 
 An work in progress example of how to use JaMoPP to modify existing Java code.
 
-Running the code will modify the CalculatorPow.java file by inserting this code direcly under the first methods signature:
+Running the code will modify the CalculatorPow.java file by inserting this code direcly ahead of the first methods first instruction\*:
 
 ```java
 if( false ) {
@@ -11,7 +11,7 @@ if( false ) {
 } else {
 }
 ```
-
+\* actually the first LocalVariableStatement
 
 ### Note:
 In order to build the code you currently need some projects in your workspace.  
