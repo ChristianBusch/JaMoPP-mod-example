@@ -8,6 +8,7 @@ import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
+import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.emftext.language.java.containers.CompilationUnit;
 import org.emftext.language.java.expressions.ExpressionsFactory;
 import org.emftext.language.java.expressions.UnaryExpression;
@@ -16,11 +17,19 @@ import org.emftext.language.java.literals.BooleanLiteral;
 import org.emftext.language.java.literals.DecimalIntegerLiteral;
 import org.emftext.language.java.literals.LiteralsFactory;
 import org.emftext.language.java.literals.impl.LiteralsFactoryImpl;
+import org.emftext.language.java.members.Field;
+import org.emftext.language.java.members.MembersFactory;
 import org.emftext.language.java.members.Method;
+import org.emftext.language.java.members.impl.MembersFactoryImpl;
+import org.emftext.language.java.references.IdentifierReference;
+import org.emftext.language.java.references.ReferencesFactory;
+import org.emftext.language.java.references.impl.ReferencesFactoryImpl;
 import org.emftext.language.java.resource.JaMoPPUtil;
 import org.emftext.language.java.statements.Block;
 import org.emftext.language.java.statements.Condition;
+import org.emftext.language.java.statements.ExpressionStatement;
 import org.emftext.language.java.statements.LocalVariableStatement;
+import org.emftext.language.java.statements.Statement;
 import org.emftext.language.java.statements.StatementsFactory;
 import org.emftext.language.java.statements.impl.StatementsFactoryImpl;
 import org.emftext.language.java.types.PrimitiveType;
@@ -29,17 +38,6 @@ import org.emftext.language.java.types.impl.TypesFactoryImpl;
 import org.emftext.language.java.variables.LocalVariable;
 import org.emftext.language.java.variables.VariablesFactory;
 import org.emftext.language.java.variables.impl.VariablesFactoryImpl;
-
-/* 
- * projects needed in the build path:
- * 
- * org.emftext.language.java
- * org.emftext.language.java.resource
- * 
- * Reason: JaMoPP maven repo seems broken right now.
- * 
- * TODO: use maven dependency instead as soon as possible
- */
 
 /**
  * A simple demonstration of using JaMoPP to modify existing .java files.
@@ -56,23 +54,24 @@ import org.emftext.language.java.variables.impl.VariablesFactoryImpl;
  * 
  * @author Christian Busch
  */
-public class Refactoring {
+public class Modifier {
 
-    private static final String location = "src/test/java/input/CalculatorPow.java";
+    private static final StatementsFactory statFac = new StatementsFactoryImpl();
+    private static final ExpressionsFactory expFac = new ExpressionsFactoryImpl();
+    private static final LiteralsFactory litFac = new LiteralsFactoryImpl();
+    private static final VariablesFactory varFac = new VariablesFactoryImpl();
+    private static final TypesFactory typeFac = new TypesFactoryImpl();
+    private static final ReferencesFactory refFac = new ReferencesFactoryImpl();
+    private static final MembersFactory memFac = new MembersFactoryImpl();
 
 
-    public static void main(String[] args) {
+    public static void initialize() {
 
 	JaMoPPUtil.initialize(); // initialize everything (has to be done once.)
-
-	Resource resource = readJavaFile(location);
-	LocalVariableStatement content = getFirstVariableStatementOfFirstMethod(resource);
-	modifyCodeBefore(content);
-	saveModifications(resource);
     }
 
 
-    private static Resource readJavaFile(String fileLocation) {
+    public static Resource readJavaFile(String fileLocation) {
 
 	ResourceSet resSet = new ResourceSetImpl();
 	Resource resource = resSet.getResource(URI.createURI(fileLocation), true);
@@ -80,7 +79,7 @@ public class Refactoring {
     }
 
 
-    private static LocalVariableStatement getFirstVariableStatementOfFirstMethod(Resource resource) {
+    public static LocalVariableStatement getFirstVariableStatementOfFirstMethod(Resource resource) {
 
 	CompilationUnit cu = (CompilationUnit) resource.getContents().get(0);
 	List<Method> methods = cu.getContainedClass().getMethods();
@@ -88,14 +87,16 @@ public class Refactoring {
 	return content;
     }
 
+    public static ExpressionStatement getFirstExpressionStatementOfFirstMethod(Resource resource) {
 
-    private static void modifyCodeBefore(LocalVariableStatement content) {
-
-	StatementsFactory statFac = new StatementsFactoryImpl();
-	ExpressionsFactory expFac = new ExpressionsFactoryImpl();
-	LiteralsFactory litFac = new LiteralsFactoryImpl();
-	VariablesFactory varFac = new VariablesFactoryImpl();
-	TypesFactory typeFac = new TypesFactoryImpl();
+	CompilationUnit cu = (CompilationUnit) resource.getContents().get(0);
+	List<Method> methods = cu.getContainedClass().getMethods();
+	ExpressionStatement content = methods.get(0).getFirstChildByType(ExpressionStatement.class);
+	return content;
+    }
+    
+    
+    public static void modifyCodeBefore(LocalVariableStatement content) {
 
 	Block ifBlock = statFac.createBlock();
 	Block elseBlock = statFac.createBlock();
@@ -141,14 +142,59 @@ public class Refactoring {
     }
 
 
-    private static void saveModifications(Resource resource) {
+    public static void saveModifications(Resource resource) {
 
 	try {
 	    resource.save(null);
 	} catch (IOException e) {
-	    System.out.println("ERROR when saving modifications!");
+	    System.out.println("ERROR saving modifications!");
 	    e.printStackTrace();
 	}
+    }
+
+
+    public static void buildMergingIfStatement(Resource resource1, Resource resource2,
+	    ExpressionStatement content1, ExpressionStatement content2) {
+
+	
+	// create boolean
+	PrimitiveType boolType = typeFac.createBoolean();
+	UnaryExpression trueBoolExp = expFac.createUnaryExpression();
+	BooleanLiteral trueBool = litFac.createBooleanLiteral();
+	trueBool.setValue(true);
+	trueBoolExp.setChild(trueBool);
+	
+	Field testField = memFac.createField();
+	testField.setInitialValue(trueBoolExp);
+	testField.setName("test");
+	testField.setTypeReference(boolType);
+	// TODO: make testField private static final
+	
+	CompilationUnit cu = (CompilationUnit) resource1.getContents().get(0);
+	cu.getContainedClass().getMembers().add(0, testField);
+	
+	// create if-statement
+	Block ifBlock = statFac.createBlock();
+	Block elseBlock = statFac.createBlock();
+
+	
+	//ifBlock.getStatements().add();
+
+	IdentifierReference testRef = refFac.createIdentifierReference();
+	testRef.setTarget(testField);
+	Condition ifElseBlock = statFac.createCondition();
+	ifElseBlock.setCondition(testRef);
+	ifElseBlock.setStatement(ifBlock);
+	ifElseBlock.setElseStatement(elseBlock);
+
+//	ifBlock.getStatements().add((Statement) EcoreUtil.copy(content1));
+//	elseBlock.getStatements().add((Statement) EcoreUtil.copy(content2));
+	
+	
+	// delete now redundant statement out of block
+	content1.addBeforeContainingStatement(ifElseBlock);
+	EcoreUtil.delete(content1);
+	
     }
 
 }
